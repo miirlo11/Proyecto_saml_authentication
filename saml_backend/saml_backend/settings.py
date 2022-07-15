@@ -129,175 +129,32 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-MIDDLEWARE.append('djangosaml2.middleware.SamlSessionMiddleware')
+SAML2_AUTH = {
+    # Metadata is required, choose either remote url or local file path
+    'METADATA_AUTO_CONF_URL': 'https://login.miirlo.xyz/app/exk5shet1lMOJvvmG5d7/sso/saml/metadata',
 
-SAML_SESSION_COOKIE_NAME = 'saml_session'
-
-SESSION_COOKIE_SECURE = True
-
-AUTHENTICATION_BACKENDS = (
-    'django.contrib.auth.backends.ModelBackend',
-    'djangosaml2.backends.Saml2Backend',
-)
-
-LOGIN_URL = '/saml2/login/'
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-
-SAML_ALLOWED_HOSTS = []
-
-SAML_DEFAULT_BINDING = saml2.BINDING_HTTP_POST
-
-SAML_LOGOUT_REQUEST_PREFERRED_BINDING = saml2.BINDING_HTTP_POST
-
-SAML_IGNORE_LOGOUT_ERRORS = True
-
-SAML_DJANGO_USER_MAIN_ATTRIBUTE = 'email'
-
-SAML_USE_NAME_ID_AS_USERNAME = True
-
-SAML_CREATE_UNKNOWN_USER = True
-
-ACS_DEFAULT_REDIRECT_URL = reverse_lazy('https://localhost:8000/admin')
-
-SAML_ATTRIBUTE_MAPPING = {
-    'uid': ('username', ),
-    'mail': ('email', ),
-    'cn': ('first_name', ),
-    'sn': ('last_name', ),
+    # Optional settings below
+    'DEFAULT_NEXT_URL': '/admin.login',  # Custom target redirect URL after the user get logged in. Default to /admin if not set. This setting will be overwritten if you have parameter ?next= specificed in the login URL.
+    'CREATE_USER': 'TRUE', # Create a new Django user when a new user logs in. Defaults to True.
+    'NEW_USER_PROFILE': {
+        'USER_GROUPS': [],  # The default group name when a new user logs in
+        'ACTIVE_STATUS': True,  # The default active status for new users
+        'STAFF_STATUS': True,  # The staff status for new users
+        'SUPERUSER_STATUS': False,  # The superuser status for new users
+    },
+    'ATTRIBUTES_MAP': {  # Change Email/UserName/FirstName/LastName to corresponding SAML2 userprofile attributes.
+        'email': 'Email',
+        'username': 'UserName',
+        'first_name': 'FirstName',
+        'last_name': 'LastName',
+    },
+    'TRIGGER': {
+        'CREATE_USER': 'path.to.your.new.user.hook.method',
+        'BEFORE_LOGIN': 'path.to.your.login.hook.method',
+    },
+    'ASSERTION_URL': 'https://localhost:8000', # Custom URL to validate incoming SAML requests against
+    'ENTITY_ID': 'https://localhost:8000/saml2_auth/acs/', # Populates the Issuer element in authn request
+    'NAME_ID_FORMAT': 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress', # Sets the Format property of authn NameIDPolicy element
+    'USE_JWT': False, # Set this to True if you are running a Single Page Application (SPA) with Django Rest Framework (DRF), and are using JWT authentication to authorize client users
+    'FRONTEND_URL': 'https://myfrontendclient.com', # Redirect URL for the client if you are using JWT auth with DRF. See explanation below
 }
-
-BASEDIR = path.dirname(path.abspath(__file__))
-
-SAML_CONFIG = {
-  # full path to the xmlsec1 binary programm
-  'xmlsec_binary': '/usr/bin/xmlsec1',
-
-  # your entity id, usually your subdomain plus the url to the metadata view
-  'entityid': 'http://localhost:8000/saml2/metadata/',
-
-  # directory with attribute mapping
-  'attribute_map_dir': path.join(BASEDIR, 'attribute-maps'),
-
-  # Permits to have attributes not configured in attribute-mappings
-  # otherwise...without OID will be rejected
-  'allow_unknown_attributes': True,
-
-  # this block states what services we provide
-  'service': {
-      # we are just a lonely SP
-      'sp' : {
-          'name': 'Federated Django sample SP',
-          'name_id_format': saml2.saml.NAMEID_FORMAT_TRANSIENT,
-
-          # For Okta add signed logout requests. Enable this:
-          # "logout_requests_signed": True,
-
-          'endpoints': {
-              # url and binding to the assetion consumer service view
-              # do not change the binding or service name
-              'assertion_consumer_service': [
-                  ('http://localhost:8000/saml2/acs/',
-                   saml2.BINDING_HTTP_POST),
-                  ],
-              # url and binding to the single logout service view
-              # do not change the binding or service name
-              'single_logout_service': [
-                  # Disable next two lines for HTTP_REDIRECT for IDP's that only support HTTP_POST. Ex. Okta:
-                  ('http://localhost:8000/saml2/ls/',
-                   saml2.BINDING_HTTP_REDIRECT),
-                  ('http://localhost:8000/saml2/ls/post',
-                   saml2.BINDING_HTTP_POST),
-                  ],
-              },
-
-          'signing_algorithm':  saml2.xmldsig.SIG_RSA_SHA256,
-          'digest_algorithm':  saml2.xmldsig.DIGEST_SHA256,
-
-           # Mandates that the identity provider MUST authenticate the
-           # presenter directly rather than rely on a previous security context.
-          'force_authn': False,
-
-           # Enable AllowCreate in NameIDPolicy.
-          'name_id_format_allow_create': False,
-
-           # attributes that this project need to identify a user
-          'required_attributes': ['givenName',
-                                  'sn',
-                                  'mail'],
-
-           # attributes that may be useful to have but not required
-          'optional_attributes': ['eduPersonAffiliation'],
-
-          'want_response_signed': True,
-          'authn_requests_signed': True,
-          'logout_requests_signed': True,
-          # Indicates that Authentication Responses to this SP must
-          # be signed. If set to True, the SP will not consume
-          # any SAML Responses that are not signed.
-          'want_assertions_signed': True,
-
-          'only_use_keys_in_metadata': True,
-
-          # When set to true, the SP will consume unsolicited SAML
-          # Responses, i.e. SAML Responses for which it has not sent
-          # a respective SAML Authentication Request.
-          'allow_unsolicited': False,
-
-          # in this section the list of IdPs we talk to are defined
-          # This is not mandatory! All the IdP available in the metadata will be considered instead.
-          'idp': {
-              # we do not need a WAYF service since there is
-              # only an IdP defined here. This IdP should be
-              # present in our metadata
-
-              # the keys of this dictionary are entity ids
-              'https://localhost/simplesaml/saml2/idp/metadata.php': {
-                  'single_sign_on_service': {
-                      saml2.BINDING_HTTP_REDIRECT: 'https://localhost/simplesaml/saml2/idp/SSOService.php',
-                      },
-                  'single_logout_service': {
-                      saml2.BINDING_HTTP_REDIRECT: 'https://localhost/simplesaml/saml2/idp/SingleLogoutService.php',
-                      },
-                  },
-              },
-          },
-      },
-
-  # where the remote metadata is stored, local, remote or mdq server.
-  # One metadatastore or many ...
-  'metadata': {
-      'remote': [{"url": "hhttps://login.miirlo.xyz/app/exk5shet1lMOJvvmG5d7/sso/saml/metadata"},]
-      },
-
-  # set to 1 to output debugging information
-  'debug': 1,
-
-  # Signing
-  'key_file': path.join(BASEDIR, 'private.key'),  # private part
-  'cert_file': path.join(BASEDIR, 'public.pem'),  # public part
-
-  # Encryption
-  'encryption_keypairs': [{
-      'key_file': path.join(BASEDIR, 'private.key'),  # private part
-      'cert_file': path.join(BASEDIR, 'public.pem'),  # public part
-  }],
-
-  # own metadata settings
-  'contact_person': [
-      {'given_name': 'Andres',
-       'sur_name': 'Miirlo',
-       'company': 'Yaco Sistemas',
-       'email_address': 'miirlo11@gmail.com',
-       'contact_type': 'technical'}
-      ],
-  # you can set multilanguage information here
-  'organization': {
-      'name': [('Yaco Sistemas', 'es'), ('Yaco Systems', 'en')],
-      'display_name': [('Yaco', 'es'), ('Yaco', 'en')],
-      'url': [('http://www.yaco.es', 'es'), ('http://www.yaco.com', 'en')],
-      },
-  }
-
-
-
-
