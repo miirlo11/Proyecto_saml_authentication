@@ -134,7 +134,7 @@ SAML2_AUTH = {
     'METADATA_AUTO_CONF_URL': 'https://login.miirlo.xyz/app/exk5shet1lMOJvvmG5d7/sso/saml/metadata',
 
     # Optional settings below
-    'DEFAULT_NEXT_URL': '/admin/login',  # Custom target redirect URL after the user get logged in. Default to /admin if not set. This setting will be overwritten if you have parameter ?next= specificed in the login URL.
+    'DEFAULT_NEXT_URL': '/admin ',  # Custom target redirect URL after the user get logged in. Default to /admin if not set. This setting will be overwritten if you have parameter ?next= specificed in the login URL.
     'CREATE_USER': 'TRUE', # Create a new Django user when a new user logs in. Defaults to True.
     'NEW_USER_PROFILE': {
         'USER_GROUPS': [],  # The default group name when a new user logs in
@@ -153,4 +153,5 @@ SAML2_AUTH = {
     'NAME_ID_FORMAT': 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress', # Sets the Format property of authn NameIDPolicy element
     'USE_JWT': False, # Set this to True if you are running a Single Page Application (SPA) with Django Rest Framework (DRF), and are using JWT authentication to authorize client users
     #'FRONTEND_URL': 'https://myfrontendclient.com', # Redirect URL for the client if you are using JWT auth with DRF. See explanation below
+    'ALLOWED_REDIRECT_HOSTS': ['http://localhost:8000/admin/login']
 }
