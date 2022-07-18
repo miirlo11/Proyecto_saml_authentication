@@ -1,3 +1,4 @@
-from django.shortcuts import render
+from curses.ascii import HT
+import requests
 
-# Create your views here.
+
